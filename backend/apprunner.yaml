@@ -8,5 +8,5 @@ run:
   runtime-version: 22
   command: npm start
   network:
-    port: 8080
+    port: 5000
     env: PORT

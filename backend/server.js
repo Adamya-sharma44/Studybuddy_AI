@@ -24,7 +24,7 @@ app.use('/api/study-plans', require('./routes/studyplans'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.status(200).json({ status: 'ok' });
 });
 
 // Error handling middleware
@@ -46,7 +46,7 @@ app.get("*", (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📚 StudyBuddy AI Backend`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);

@@ -6,16 +6,30 @@ const Subject = require('../models/Subject');
 const StudyPlan = require('../models/StudyPlan');
 const auth = require('../middleware/auth');
 
-// Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+// NOTE:
+// - On AWS App Runner (Linux), the service must be able to start even if optional
+//   env vars like OPENAI_API_KEY are not configured yet.
+// - The OpenAI SDK throws at construction time if apiKey is missing, so we
+//   instantiate lazily per-request.
+function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+  return new OpenAI({ apiKey });
+}
 
 // @route   POST /api/study-plans/generate
 // @desc    Generate AI-powered study plan
 // @access  Private
 router.post('/generate', auth, async (req, res) => {
   try {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      return res.status(503).json({
+        success: false,
+        message: 'AI study plan generation is not configured on this server (missing OPENAI_API_KEY).'
+      });
+    }
+
     // Get all pending assignments
     const assignments = await Assignment.find({
       user: req.userId,

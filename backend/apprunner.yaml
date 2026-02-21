@@ -4,9 +4,8 @@ build:
   commands:
     build:
       - npm install
-      - npm run build
 run:
-  runtime-version: 20
+  runtime-version: 22
   command: npm start
   network:
     port: 5000

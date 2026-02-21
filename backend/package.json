@@ -7,7 +7,6 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "cd ../frontend && npm install && npm run build",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },

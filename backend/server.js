@@ -11,21 +11,25 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Database Connection
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ MongoDB connected'))
-  .catch((err) => console.log('❌ MongoDB connection error:', err));
+// Health check endpoint — must be first, before DB dependency
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+// Database Connection — non-fatal: server stays up even if Mongo fails
+if (process.env.MONGO_URI) {
+  mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('✅ MongoDB connected'))
+    .catch((err) => console.error('❌ MongoDB connection error:', err));
+} else {
+  console.warn('⚠️  MONGO_URI not set — skipping MongoDB connection');
+}
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/subjects', require('./routes/subjects'));
 app.use('/api/assignments', require('./routes/assignments'));
 app.use('/api/study-plans', require('./routes/studyplans'));
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -37,16 +41,23 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Serve static frontend build
-app.use(express.static(path.join(__dirname, "../frontend/dist")));
-
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
-});
+// Serve static frontend build (only if dist exists)
+const frontendDist = path.join(__dirname, '../frontend/dist');
+const fs = require('fs');
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+} else {
+  app.get('*', (req, res) => {
+    res.status(404).json({ message: 'Frontend not built. API only mode.' });
+  });
+}
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📚 StudyBuddy AI Backend`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
